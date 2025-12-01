@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "lodash.get": "^4.4.2",
+    "vitest": "^4.0.14"
+  },
+  "dependencies": {
+    "graphql": "^16.12.0"
+  }
+}
