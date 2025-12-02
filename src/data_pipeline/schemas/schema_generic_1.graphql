@@ -1,0 +1,40 @@
+schema { query: Query }
+
+type Query {
+  nodeA(id: ID!): EntityA
+  nodeB(id: ID!): EntityB
+  listA(limit: Int): [EntityA]
+  search(text: String): SearchResult
+}
+
+interface Node { id: ID! }
+interface Named { name: String }
+
+type EntityA implements Node & Named {
+  id: ID!
+  name: String
+  score: Float
+  ref: EntityB
+  children: [EntityC]
+}
+
+type EntityB implements Node {
+  id: ID!
+  flag: Boolean
+  nested: EntityA
+  listB: [EntityB]
+}
+
+type EntityC implements Named {
+  name: String
+  metrics: Metrics
+  related: [EntityA]
+}
+
+type Metrics {
+  count: Int
+  avg: Float
+  tags: [String]
+}
+
+union SearchResult = EntityA | EntityB | EntityC

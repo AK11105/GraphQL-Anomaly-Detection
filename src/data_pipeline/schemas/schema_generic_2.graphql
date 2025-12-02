@@ -1,0 +1,40 @@
+schema { query: Query, mutation: Mutation }
+
+type Query {
+  topNodes(limit: Int): [TopNode]
+  recursive(id: ID!): RecursiveNode
+  profile(id: ID!): Profile
+}
+
+type Mutation {
+  updateProfile(id: ID!, name: String): Profile
+  createItem(input: ItemInput): Item
+}
+
+interface TopNode { id: ID! name: String }
+
+type Profile implements TopNode {
+  id: ID!
+  name: String
+  stats: Stats
+  items: [Item]
+}
+
+type Item {
+  id: ID!
+  title: String
+  content: String
+  metadata: Meta
+}
+
+input ItemInput {
+  title: String
+  metadata: MetaInput
+}
+
+type Meta { created: String, tags: [String] }
+input MetaInput { created: String, tags: [String] }
+
+type Stats { views: Int, score: Float }
+
+type RecursiveNode { id: ID! next: RecursiveNode children: [RecursiveNode] }

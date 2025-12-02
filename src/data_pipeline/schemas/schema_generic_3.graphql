@@ -1,0 +1,27 @@
+schema { query: Query, subscription: Subscription }
+
+type Query {
+  group(id: ID!): Group
+  groups(filter: GroupFilter): [Group]
+  search(term: String): SearchOutput
+}
+
+type Subscription {
+  watchGroup(id: ID!): Group
+}
+
+input GroupFilter { minSize: Int, tag: String }
+
+type Group {
+  id: ID!
+  title: String
+  members: [Member]
+  info: Info
+}
+
+type Member { id: ID!, alias: String, stats: MemberStats }
+type MemberStats { score: Float, lastActive: String }
+
+type Info { summary: String, details: String, nested: Info }
+
+type SearchOutput { groups: [Group], members: [Member] }

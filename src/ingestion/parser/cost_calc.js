@@ -8,10 +8,10 @@ import {
 
 /**
  * Phase-1 structural cost engine.
- * Works without external libs.
- * Expands fragments.
- * Validates fields using schema.
- * Computes meaningful cost used by tests.
+ * - Validates fields using schema
+ * - Expands fragments using correct typeCondition
+ * - Resolves root types correctly for query/mutation/subscription
+ * - Computes totalFields + depth * 1.5
  */
 
 export async function computeCostMetrics({ schema, ast }) {
@@ -34,7 +34,7 @@ export async function computeCostMetrics({ schema, ast }) {
   const fragmentMap = Object.create(null);
 
   // ---------------------------------------------------
-  // Build FragmentDefinition map
+  // Collect FragmentDefinitions
   // ---------------------------------------------------
   for (const def of ast.definitions) {
     if (def.kind === Kind.FRAGMENT_DEFINITION) {
@@ -42,13 +42,30 @@ export async function computeCostMetrics({ schema, ast }) {
     }
   }
 
-  const rootType = schema.getQueryType();
   let totalFields = 0;
   let maxDepth = 1;
   let error = null;
 
   // ---------------------------------------------------
-  // Field validation helper
+  // Resolve schema root type per operation
+  // ---------------------------------------------------
+  function getOperationRoot(def) {
+    if (!def.operation) return schema.getQueryType();
+
+    switch (def.operation) {
+      case "query":
+        return schema.getQueryType();
+      case "mutation":
+        return schema.getMutationType() || schema.getQueryType();
+      case "subscription":
+        return schema.getSubscriptionType() || schema.getQueryType();
+      default:
+        return schema.getQueryType();
+    }
+  }
+
+  // ---------------------------------------------------
+  // Field validation
   // ---------------------------------------------------
   function getFieldDef(parentType, fieldName) {
     if (!(parentType instanceof GraphQLObjectType)) return null;
@@ -56,7 +73,7 @@ export async function computeCostMetrics({ schema, ast }) {
   }
 
   // ---------------------------------------------------
-  // Walk selection sets recursively
+  // Recursive walker
   // ---------------------------------------------------
   function walkSelection(node, parentType, depth) {
     if (error) return;
@@ -72,6 +89,7 @@ export async function computeCostMetrics({ schema, ast }) {
       }
 
       totalFields += 1;
+
       const nextType = getNamedType(fieldDef.type);
 
       if (node.selectionSet) {
@@ -81,7 +99,6 @@ export async function computeCostMetrics({ schema, ast }) {
           walkSelection(child, nextType, depth + 1);
         }
       }
-
       return;
     }
 
@@ -93,13 +110,28 @@ export async function computeCostMetrics({ schema, ast }) {
         error = `Unknown fragment '${fragName}'`;
         return;
       }
-      walkSelection(frag.selectionSet, parentType, depth);
+
+      const typeName = frag.typeCondition.name.value;
+      const fragType = schema.getType(typeName);
+      if (!fragType) {
+        error = `Unknown type '${typeName}' for fragment '${fragName}'`;
+        return;
+      }
+
+      walkSelection(frag.selectionSet, fragType, depth);
       return;
     }
 
-    // ---- FRAGMENT DEFINITION -------------------------
+    // ---- INLINE / FRAGMENT DEFINITION ----------------
     if (node.kind === Kind.FRAGMENT_DEFINITION) {
-      walkSelection(node.selectionSet, parentType, depth);
+      const typeName = node.typeCondition.name.value;
+      const fragType = schema.getType(typeName);
+      if (!fragType) {
+        error = `Unknown type '${typeName}' in fragment definition`;
+        return;
+      }
+
+      walkSelection(node.selectionSet, fragType, depth);
       return;
     }
 
@@ -112,15 +144,21 @@ export async function computeCostMetrics({ schema, ast }) {
   }
 
   // ---------------------------------------------------
-  // Walk each operation root
+  // Traverse each operation
   // ---------------------------------------------------
   for (const def of ast.definitions) {
     if (def.kind === Kind.OPERATION_DEFINITION) {
-      walkSelection(def.selectionSet, rootType, 1);
+      const opRoot = getOperationRoot(def);
+
+      if (!opRoot) {
+        error = `Schema missing root type for operation '${def.operation}'`;
+        break;
+      }
+
+      walkSelection(def.selectionSet, opRoot, 1);
     }
   }
 
-  // Invalid field → return test-required state
   if (error) {
     return {
       estimated_cost: null,
@@ -130,7 +168,7 @@ export async function computeCostMetrics({ schema, ast }) {
   }
 
   // ---------------------------------------------------
-  // Final meaningful Phase-1 cost
+  // Final cost
   // ---------------------------------------------------
   const estimatedCost = totalFields + maxDepth * 1.5;
 

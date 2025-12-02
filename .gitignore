@@ -11,3 +11,6 @@ wheels/
 node_modules/
 external/
 .pytest_cache/
+
+#Datasets
+dataset/

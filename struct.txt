@@ -1,0 +1,130 @@
+graphql-anomaly-detector
+├── .gitignore
+├── .python-version
+├── configs
+│   ├── data_config.yaml
+│   ├── model_config.yaml
+│   └── system_config.yaml
+├── docs
+│   ├── PHASE1.md
+│   ├── PHASE2.md
+│   ├── PHASE3.md
+│   ├── PHASE4.md
+│   ├── PHASE5.md
+│   ├── ROADMAP.md
+│   └── System-Architecture.png
+├── external
+│   ├── graphql-cop
+│   ├── graphql-js
+│   └── graphql-query-complexity
+├── infra
+│   ├── compose
+│   │   └── docker-compose.yml
+│   ├── docker
+│   │   ├── Dockerfile.detector
+│   │   ├── Dockerfile.ingestion
+│   │   ├── Dockerfile.ml
+│   │   └── Dockerfile.server
+│   └── k8s
+│       ├── configmap.yaml
+│       ├── deployment-detector.yaml
+│       ├── secrets.yaml
+│       └── service-detector.yaml
+├── package-lock.json
+├── package.json
+├── pyproject.toml
+├── README.md
+├── src
+│   ├── data_pipeline
+│   │   ├── dataset
+│   │   │   ├── final_train_ready
+│   │   │   ├── malicious
+│   │   │   ├── normal
+│   │   │   ├── processed
+│   │   │   ├── raw
+│   │   │   ├── sequences
+│   │   │   └── windows
+│   │   ├── generators
+│   │   │   ├── combine_datasets.py
+│   │   │   ├── generate_malicious.py
+│   │   │   ├── generate_normal.py
+│   │   │   └── generate_sequences.py
+│   │   └── preprocessing
+│   │       ├── normalize_features.py
+│   │       ├── split_train_val_test.py
+│   │       ├── windowing.py
+│   │       └── __pycache__
+│   │           └── split_train_val_test.cpython-312-pytest-9.0.1.pyc
+│   ├── ingestion
+│   │   ├── middleware
+│   │   │   └── graphql_middleware.js
+│   │   ├── parser
+│   │   │   ├── ast_extractor.js
+│   │   │   ├── cost_calc.js
+│   │   │   ├── depth_calc.js
+│   │   │   ├── feature_extractor.py
+│   │   │   ├── run_metrics.js
+│   │   │   ├── __init__.py
+│   │   │   └── __pycache__
+│   │   │       ├── feature_extractor.cpython-312.pyc
+│   │   │       └── __init__.cpython-312.pyc
+│   │   ├── queue
+│   │   │   └── producer.py
+│   │   ├── __init__.py
+│   │   └── __pycache__
+│   │       └── __init__.cpython-312.pyc
+│   ├── integration
+│   │   ├── graphql_server_patch
+│   │   │   └── express_middleware.js
+│   │   ├── logging
+│   │   │   └── structured_logging.py
+│   │   └── monitor
+│   │       ├── grafana_dashboards
+│   │       └── prometheus_metrics.py
+│   ├── ml
+│   │   ├── export
+│   │   │   ├── export_onnx.py
+│   │   │   └── export_torchscript.py
+│   │   ├── models
+│   │   │   ├── ensemble_head.py
+│   │   │   ├── feature_schema.py
+│   │   │   ├── lstm_detector.py
+│   │   │   └── transformer_detector.py
+│   │   ├── serving
+│   │   │   ├── http_server.py
+│   │   │   └── predictor.py
+│   │   └── training
+│   │       ├── dataloader.py
+│   │       ├── experiments
+│   │       ├── metrics.py
+│   │       └── train.py
+│   ├── realtime_detector
+│   │   ├── actions
+│   │   │   ├── allow.py
+│   │   │   ├── block.py
+│   │   │   └── throttle.py
+│   │   ├── rule_engine.py
+│   │   ├── scoring.py
+│   │   ├── service.py
+│   │   └── thresholds.yaml
+│   ├── utils
+│   │   ├── common_types.py
+│   │   ├── config_loader.py
+│   │   └── timer.py
+│   ├── __init__.py
+│   └── __pycache__
+│       └── __init__.cpython-312.pyc
+├── tests
+│   ├── ast_estractor.test.js
+│   ├── cost_calc.test.js
+│   ├── depth_calc.test.js
+│   ├── test_feature_extractor.py
+│   ├── test_middleware.py
+│   ├── test_ml_models.py
+│   ├── test_realtime_detector.py
+│   └── __pycache__
+│       ├── test_feature_extractor.cpython-312-pytest-9.0.1.pyc
+│       ├── test_middleware.cpython-312-pytest-9.0.1.pyc
+│       ├── test_ml_models.cpython-312-pytest-9.0.1.pyc
+│       └── test_realtime_detector.cpython-312-pytest-9.0.1.pyc
+└── uv.lock
