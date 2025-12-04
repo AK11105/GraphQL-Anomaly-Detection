@@ -1,0 +1,115 @@
+GraphQL Query Generation and Validation Commands
+1. Generate Normal Queries
+
+python src/data_pipeline/generators/generate_normal.py \
+  --schemas schema_g1.json,schema_g2.json,schema_g3.json \
+  --out src/data_pipeline/dataset/raw/normal_raw.jsonl \
+  --count 2000 \
+  --generalize \
+  --uniform-field-sampling \
+  --seed 42
+
+
+2. Validate Normal Queries
+
+python src/data_pipeline/validators/validate_generated.py \
+  --input src/data_pipeline/dataset/raw/normal_raw.jsonl \
+  --out-validated src/data_pipeline/dataset/normal/validated_normal.jsonl \
+  --out-invalid src/data_pipeline/dataset/normal/invalid_normal.jsonl \
+  --schema-introspection schema_g1.json
+
+
+3. Generate Malicious Queries
+bash
+python src/data_pipeline/generators/generate_malicious.py \
+  --schemas schema_g1.json,schema_g2.json,schema_g3.json \
+  --out src/data_pipeline/dataset/raw/malicious_raw.jsonl \
+  --count 2000 \
+  --mode mix \
+  --seed 42
+
+
+4. Validate Malicious Queries
+
+python src/data_pipeline/validators/validate_generated.py \
+  --input src/data_pipeline/dataset/raw/malicious_raw.jsonl \
+  --out-validated src/data_pipeline/dataset/malicious/validated_malicious.jsonl \
+  --out-invalid src/data_pipeline/dataset/malicious/invalid_malicious.jsonl \
+  --schema-introspection schema_g1.json
+
+5. Generate Sequences
+
+python src/data_pipeline/generators/generate_sequences.py \
+  --normal src/data_pipeline/dataset/normal/validated_normal.jsonl \
+  --malicious src/data_pipeline/dataset/malicious/validated_malicious.jsonl \
+  --out src/data_pipeline/dataset/sequences/sequences.jsonl
+
+6. Generate Features
+
+ python -m src.data_pipeline.preprocessing.feature_consolidator \
+  --normal src/data_pipeline/dataset/normal/validated_normal.jsonl \
+  --malicious src/data_pipeline/dataset/malicious/validated_malicious.jsonl \
+  --out src/data_pipeline/dataset/features
+
+7. Generate Final Train Dataset 
+
+python src/data_pipeline/preprocessing/build_train_data.py \
+  --validated-normal src/data_pipeline/dataset/normal/validated_normal.jsonl \
+  --validated-malicious src/data_pipeline/dataset/malicious/validated_malicious.jsonl \
+  --invalid-malicious src/data_pipeline/dataset/malicious/invalid_malicious.jsonl \
+  --out src/data_pipeline/dataset/final_train_ready
+
+8. Split Dataset 
+
+python src/data_pipeline/preprocessing/split_train_val_test.py \
+  --input src/data_pipeline/dataset/sequences/sequences.jsonl \
+  --outdir src/data_pipeline/dataset/final_train_ready \
+  --train-ratio 0.8 \
+  --val-ratio 0.1 \
+  --test-ratio 0.1 \
+  --seed 42
+
+9. Split Features 
+
+python src/data_pipeline/preprocessing/split_features.py \
+  --input src/data_pipeline/dataset/features/feature_matrix.jsonl \
+  --outdir src/data_pipeline/dataset/features \
+  --train-ratio 0.8 \
+  --val-ratio 0.1 \
+  --test-ratio 0.1 \
+  --seed 42
+
+================================================================================
+
+DataLoader usage
+
+1. Sequnence model
+
+from transformers import AutoTokenizer
+from src.ml.dataloaders.graphql_dataloaders import create_sequence_dataloaders
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+train_dl, val_dl, test_dl = create_sequence_dataloaders(
+    train_path="src/data_pipeline/dataset/sequences/train.jsonl",
+    val_path="src/data_pipeline/dataset/sequences/val.jsonl",
+    test_path="src/data_pipeline/dataset/sequences/test.jsonl",
+    tokenizer=tokenizer,
+    batch_size=16,
+)
+
+2. Feature model
+
+from src.ml.models.feature_schema import get_feature_keys
+from src.ml.dataloaders.graphql_dataloaders import create_feature_dataloaders
+
+keys = get_feature_keys()
+
+train_dl, val_dl, test_dl = create_feature_dataloaders(
+    "src/data_pipeline/dataset/features/train.jsonl",
+    "src/data_pipeline/dataset/features/val.jsonl",
+    "src/data_pipeline/dataset/features/test.jsonl",
+    feature_keys=keys,
+    batch_size=32,
+)
+
