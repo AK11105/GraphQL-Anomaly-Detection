@@ -14,3 +14,9 @@ external/
 
 #Datasets
 dataset/
+
+#Train Logs
+*.log
+
+#Model Files
+experiments/
